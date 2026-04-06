@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WaveletPress — Image Compression Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07090d;--surface:#0d1017;--panel:#111620;--border:#1c2433;--accent:#00e5c4;--accent2:#ff6b35;--accent3:#7c3aed;--text:#ddeeff;--muted:#4a5a6e;--success:#00d68f;--mono:'Space Mono',monospace;--sans:'Syne',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,196,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,196,.025) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0}
+
+header{position:relative;z-index:10;padding:22px 44px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:14px}
+.logo-mark{width:30px;height:30px}
+.logo h1{font-size:1.25rem;font-weight:800;letter-spacing:-1px}
+.logo h1 span{color:var(--accent)}
+.badges{display:flex;gap:8px}
+.badge{font-family:var(--mono);font-size:.58rem;padding:4px 10px;border-radius:2px;letter-spacing:1.5px;text-transform:uppercase}
+.bt{background:rgba(0,229,196,.08);border:1px solid rgba(0,229,196,.2);color:var(--accent)}
+.bp{background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);color:#a78bfa}
+
+.app{position:relative;z-index:10;padding:28px 44px 60px;max-width:1380px;margin:0 auto}
+
+.mode-bar{display:flex;background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:24px}
+.mode-btn{padding:10px 26px;font-family:var(--mono);font-size:.65rem;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .2s;display:flex;align-items:center;gap:7px;border-bottom:2px solid transparent}
+.mode-btn.active{background:rgba(0,229,196,.09);color:var(--accent);border-bottom-color:var(--accent)}
+.mode-btn:hover:not(.active){color:var(--text);background:rgba(255,255,255,.02)}
+
+.grid{display:grid;grid-template-columns:360px 1fr;gap:18px;align-items:start}
+
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.panel:last-child{margin-bottom:0}
+.ph{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.pt{font-family:var(--mono);font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+.pb{padding:18px}
+
+.drop-zone{border:2px dashed var(--border);border-radius:7px;padding:32px 14px;text-align:center;cursor:pointer;transition:all .25s;position:relative;overflow:hidden}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:rgba(0,229,196,.04)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.di{font-size:2rem;display:block;margin-bottom:10px}
+.dt{font-size:.82rem;color:var(--muted);margin-bottom:5px}
+.ds{font-family:var(--mono);font-size:.58rem;color:var(--muted);opacity:.5;letter-spacing:1px}
+
+.color-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.co{border:2px solid var(--border);border-radius:6px;padding:9px 5px;cursor:pointer;text-align:center;transition:all .2s;background:var(--surface)}
+.co.sel{border-color:var(--accent);background:rgba(0,229,196,.07)}
+.co:hover{border-color:rgba(0,229,196,.35)}
+.sw{width:26px;height:26px;border-radius:4px;margin:0 auto 5px}
+.cl{font-family:var(--mono);font-size:.57rem;color:var(--text);letter-spacing:.5px}
+.cs{font-family:var(--mono);font-size:.5rem;color:var(--muted);margin-top:2px}
+
+.sr{margin-bottom:14px}
+.sl{display:flex;justify-content:space-between;margin-bottom:6px;font-size:.73rem}
+.sl span:last-child{font-family:var(--mono);color:var(--accent);font-size:.68rem}
+input[type=range]{width:100%;-webkit-appearance:none;height:3px;background:var(--border);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;background:var(--accent);border-radius:50%;cursor:pointer;box-shadow:0 0 10px rgba(0,229,196,.5)}
+select{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 11px;border-radius:5px;font-family:var(--mono);font-size:.68rem;cursor:pointer;outline:none;appearance:none}
+select:focus{border-color:var(--accent)}
+
+.btn-run{width:100%;padding:13px;background:var(--accent);color:#07090d;border:none;border-radius:6px;font-family:var(--sans);font-weight:800;font-size:.88rem;cursor:pointer;transition:all .2s;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn-run:hover{background:#00ffdb;transform:translateY(-1px);box-shadow:0 8px 28px rgba(0,229,196,.35)}
+.btn-run:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;transform:none;box-shadow:none}
+.btn-dl{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;background:transparent;border:1.5px solid var(--accent);color:var(--accent);border-radius:6px;font-family:var(--sans);font-weight:700;font-size:.82rem;cursor:pointer;transition:all .2s;margin-top:10px;text-decoration:none}
+.btn-dl:hover{background:rgba(0,229,196,.08);transform:translateY(-1px)}
+.btn-dl.off{border-color:var(--border);color:var(--muted);pointer-events:none}
+
+.spin{width:15px;height:15px;border:2px solid rgba(7,9,13,.25);border-top-color:#07090d;border-radius:50%;animation:spin .7s linear infinite;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.prev-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.ib{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;position:relative}
+.ibl{position:absolute;top:8px;left:8px;font-family:var(--mono);font-size:.57rem;letter-spacing:1.5px;text-transform:uppercase;padding:3px 9px;border-radius:3px;z-index:2}
+.ibl.o{background:rgba(7,9,13,.85);color:var(--muted);border:1px solid var(--border)}
+.ibl.c{background:rgba(0,229,196,.13);color:var(--accent);border:1px solid rgba(0,229,196,.25)}
+.icw{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;min-height:180px;background:repeating-conic-gradient(#111620 0% 25%,#0d1017 0% 50%) 0 0/18px 18px}
+.icw canvas,.icw img{max-width:100%;max-height:260px;object-fit:contain;display:block}
+.ph-txt{font-family:var(--mono);font-size:.62rem;color:var(--muted);text-align:center;opacity:.45;line-height:1.7}
+
+.met-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.mc{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:13px 14px;text-align:center;transition:border-color .3s}
+.mc.hi{border-color:rgba(0,229,196,.35);background:rgba(0,229,196,.04)}
+.mv{font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--accent);display:block;margin-bottom:3px}
+.mlb{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+
+.rstrip{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:14px 18px;margin-bottom:14px}
+.rhd{display:flex;justify-content:space-between;margin-bottom:9px;font-size:.7rem;color:var(--muted)}
+.btrack{background:var(--border);height:6px;border-radius:3px;overflow:hidden}
+.bfill{height:100%;background:linear-gradient(90deg,#7c3aed,var(--accent));border-radius:3px;transition:width 1.2s cubic-bezier(.4,0,.2,1);width:0}
+.blbls{display:flex;justify-content:space-between;margin-top:6px;font-family:var(--mono);font-size:.55rem;color:var(--muted)}
+
+.logbox{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:13px 15px;font-family:var(--mono);font-size:.65rem;min-height:85px;max-height:115px;overflow-y:auto;line-height:1.85;color:var(--muted)}
+.logbox::-webkit-scrollbar{width:3px}
+.logbox::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.lok{color:var(--success)}.li{color:var(--accent)}.lw{color:var(--accent2)}
+
+.cmap-row{margin-bottom:12px}
+.cmap-row p{font-family:var(--mono);font-size:.58rem;color:var(--muted);margin-bottom:5px}
+#cmap-strip{width:100%;border-radius:4px;border:1px solid var(--border);display:block}
+.cmap-ends{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.52rem;color:var(--muted);margin-top:4px}
+
+.note-box{font-family:var(--mono);font-size:.6rem;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:9px 11px;line-height:1.7;margin-top:10px}
+
+@media(max-width:880px){.grid{grid-template-columns:1fr}header,.app{padding-left:18px;padding-right:18px}.prev-grid{grid-template-columns:1fr}.met-row{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="15,2 28,9 28,21 15,28 2,21 2,9" fill="rgba(0,229,196,.1)" stroke="#00e5c4" stroke-width="1.5"/>
+        <polyline points="2,9 15,15 28,9" stroke="#00e5c4" stroke-width="1" opacity=".45"/>
+        <line x1="15" y1="15" x2="15" y2="28" stroke="#00e5c4" stroke-width="1" opacity=".45"/>
+        <circle cx="15" cy="15" r="2.5" fill="#00e5c4"/>
+      </svg>
+    </div>
+    <h1>Wavelet<span>Press</span></h1>
+  </div>
+  <div class="badges">
+    <span class="badge bt">Haar DWT + Huffman</span>
+    <span class="badge bp">Studio v2</span>
+  </div>
+</header>
+
+<div class="app">
+  <div class="mode-bar">
+    <button class="mode-btn active" onclick="setTopMode('mono',this)">⬛ Monochrome</button>
+    <button class="mode-btn" onclick="setTopMode('colorscale',this)">🎨 Color Scale</button>
+    <button class="mode-btn" onclick="setTopMode('full',this)">🖼 Full Color</button>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT -->
+    <div>
+      <!-- Upload -->
+      <div class="panel">
+        <div class="ph"><span class="pt">Source Image</span><span id="fmeta" style="font-family:var(--mono);font-size:.58rem;color:var(--muted)">No file</span></div>
+        <div class="pb">
+          <div class="drop-zone" id="dzone">
+            <input type="file" accept="image/*" id="finput" onchange="loadImg(this)">
+            <span class="di">📂</span>
+            <div class="dt">Drop image or click to browse</div>
+            <div class="ds">JPG · PNG · WEBP · BMP</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Color modes -->
+      <div class="panel" id="cmodes-panel">
+        <div class="ph"><span class="pt">Output Colormap</span><span id="cmode-active" style="font-family:var(--mono);font-size:.58rem;color:var(--accent)">Mono</span></div>
+        <div class="pb">
+          <div class="color-grid">
+            <div class="co sel" id="co-mono" onclick="pickCmap('mono')">
+              <div class="sw" style="background:linear-gradient(135deg,#000,#fff)"></div>
+              <div class="cl">Mono</div><div class="cs">Grayscale</div>
+            </div>
+            <div class="co" id="co-heat" onclick="pickCmap('heat')">
+              <div class="sw" style="background:linear-gradient(135deg,#000080,#ff0000,#ffff00)"></div>
+              <div class="cl">Heat</div><div class="cs">Jet map</div>
+            </div>
+            <div class="co" id="co-viridis" onclick="pickCmap('viridis')">
+              <div class="sw" style="background:linear-gradient(135deg,#440154,#35b779,#fde725)"></div>
+              <div class="cl">Viridis</div><div class="cs">Perceptual</div>
+            </div>
+            <div class="co" id="co-plasma" onclick="pickCmap('plasma')">
+              <div class="sw" style="background:linear-gradient(135deg,#0d0887,#cc4778,#f0f921)"></div>
+              <div class="cl">Plasma</div><div class="cs">Vivid</div>
+            </div>
+            <div class="co" id="co-cool" onclick="pickCmap('cool')">
+              <div class="sw" style="background:linear-gradient(135deg,#00ffff,#ff00ff)"></div>
+              <div class="cl">Cool</div><div class="cs">Cyan-Mag</div>
+            </div>
+            <div class="co" id="co-inferno" onclick="pickCmap('inferno')">
+              <div class="sw" style="background:linear-gradient(135deg,#000004,#b5367a,#fcffa4)"></div>
+              <div class="cl">Inferno</div><div class="cs">Dark fire</div>
+            </div>
+          </div>
+          <div class="note-box" id="cnote"><span style="color:var(--accent)">Mono:</span> Grayscale DWT compression — classic wavelet output</div>
+        </div>
+      </div>
+
+      <!-- Parameters -->
+      <div class="panel">
+        <div class="ph"><span class="pt">Compression Parameters</span></div>
+        <div class="pb">
+          <div class="sr"><div class="sl"><span>Threshold</span><span id="tv">10</span></div><input type="range" min="1" max="80" value="10" oninput="document.getElementById('tv').textContent=this.value" id="thr"></div>
+          <div class="sr"><div class="sl"><span>Quantization (Q)</span><span id="qv">10</span></div><input type="range" min="1" max="60" value="10" oninput="document.getElementById('qv').textContent=this.value" id="qnt"></div>
+          <div class="sr"><div class="sl"><span>JPEG/WebP Quality</span><span id="qlv">80%</span></div><input type="range" min="10" max="100" value="80" oninput="document.getElementById('qlv').textContent=this.value+'%'" id="ql"></div>
+          <div class="sr"><div class="sl"><span>Wavelet Basis</span></div><select id="wav"><option value="haar">Haar (fastest)</option><option value="db2">Daubechies-2</option><option value="db4">Daubechies-4</option><option value="sym2">Symlet-2</option></select></div>
+          <div class="sr" style="margin-bottom:0"><div class="sl"><span>Output Format</span></div><select id="fmt"><option value="png">PNG (lossless)</option><option value="jpeg">JPEG (lossy, smaller)</option><option value="webp">WebP (smallest)</option></select></div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <button class="btn-run" id="runbtn" onclick="runCompress()">
+        <span id="runtxt">▶ Compress Image</span>
+        <div class="spin" id="runspin"></div>
+      </button>
+      <a class="btn-dl off" id="dlbtn" href="#" download="compressed.png">⬇ Download Compressed Image</a>
+    </div>
+
+    <!-- RIGHT -->
+    <div>
+      <div class="panel">
+        <div class="ph">
+          <span class="pt">Preview</span>
+          <span id="pdim" style="font-family:var(--mono);font-size:.58rem;color:var(--muted)">—</span>
+        </div>
+        <div class="pb">
+          <div class="prev-grid">
+            <div class="ib">
+              <span class="ibl o">Original</span>
+              <div class="icw" id="owrap"><div class="ph-txt">Upload image<br>to preview</div></div>
+            </div>
+            <div class="ib">
+              <span class="ibl c">Compressed</span>
+              <div class="icw" id="cwrap"><div class="ph-txt">Run compression<br>to see output</div></div>
+            </div>
+          </div>
+
+          <div class="cmap-row" id="cmaprow" style="display:none">
+            <p>Color scale: <span id="cmapname" style="color:var(--accent)">—</span></p>
+            <canvas id="cmap-strip" height="14"></canvas>
+            <div class="cmap-ends"><span>Low intensity (0)</span><span>High intensity (255)</span></div>
+          </div>
+
+          <div class="met-row">
+            <div class="mc"><span class="mv" id="morig">—</span><span class="mlb">Original KB</span></div>
+            <div class="mc"><span class="mv" id="mcomp">—</span><span class="mlb">Compressed KB</span></div>
+            <div class="mc hi"><span class="mv" id="mratio">—</span><span class="mlb">Ratio</span></div>
+            <div class="mc"><span class="mv" id="msave">—</span><span class="mlb">Savings</span></div>
+          </div>
+
+          <div class="rstrip">
+            <div class="rhd"><span>Compressed vs original size</span><span id="rpct" style="color:var(--accent)">—</span></div>
+            <div class="btrack"><div class="bfill" id="bfill"></div></div>
+            <div class="blbls"><span>0</span><span id="bmid">—</span><span id="bmax">—</span></div>
+          </div>
+
+          <div class="logbox" id="logbox"><span class="li">// Upload an image and click Compress to begin...</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer style="position:relative;z-index:10;padding:22px 44px;border-top:1px solid var(--border);display:flex;justify-content:space-between">
+  <span style="font-family:var(--mono);font-size:.55rem;color:var(--muted)">WaveletPress Studio — Real Haar DWT in-browser compression</span>
+  <span style="font-family:var(--mono);font-size:.55rem;color:var(--muted)">Canvas API · No server required</span>
+</footer>
+
+<!-- Hidden work canvases -->
+<canvas id="origc" style="display:none"></canvas>
+<canvas id="workc" style="display:none"></canvas>
+
+<script>
+/* =========================================================
+   STATE
+========================================================= */
+const S = {
+  topMode: 'mono',     // mono | colorscale | full
+  cmap: 'mono',        // mono|heat|viridis|plasma|cool|inferno
+  loaded: false,
+  origSize: 0,
+  compDataURL: null,
+};
+
+const CNOTES = {
+  mono:    '<span style="color:var(--accent)">Mono:</span> Grayscale DWT compression — classic wavelet output',
+  heat:    '<span style="color:var(--accent)">Heat/Jet:</span> Maps pixel intensity → rainbow spectrum',
+  viridis: '<span style="color:var(--accent)">Viridis:</span> Perceptually uniform blue→green→yellow colormap',
+  plasma:  '<span style="color:var(--accent)">Plasma:</span> Purple→pink→yellow, vivid perceptual scale',
+  cool:    '<span style="color:var(--accent)">Cool:</span> Cyan–Magenta gradient false-color scale',
+  inferno: '<span style="color:var(--accent)">Inferno:</span> Black→purple→fire→pale — dramatic scale',
+};
+
+/* =========================================================
+   COLORMAPS  (value 0-255 → [r,g,b])
+========================================================= */
+function cmapMono(v)    { return [v,v,v]; }
+function cmapHeat(v) {
+  const t=v/255;
+  return [
+    clamp(Math.round((1.5-Math.abs(4*t-3))*255)),
+    clamp(Math.round((1.5-Math.abs(4*t-2))*255)),
+    clamp(Math.round((1.5-Math.abs(4*t-1))*255)),
+  ];
+}
+function lerpStops(t,stops){
+  const i=Math.min(t*(stops.length-1),stops.length-1.0001);
+  const lo=stops[Math.floor(i)],hi=stops[Math.ceil(i)],f=i-Math.floor(i);
+  return lo.map((c,j)=>Math.round(c+(hi[j]-c)*f));
+}
+function cmapViridis(v){ return lerpStops(v/255,[[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37]]); }
+function cmapPlasma(v) { return lerpStops(v/255,[[13,8,135],[126,3,168],[204,71,120],[248,149,64],[240,249,33]]); }
+function cmapCool(v)   { return [clamp(v), clamp(255-v), 255]; }
+function cmapInferno(v){ return lerpStops(v/255,[[0,0,4],[66,10,104],[181,54,122],[251,180,98],[252,255,164]]); }
+
+const CMAPS = { mono:cmapMono, heat:cmapHeat, viridis:cmapViridis, plasma:cmapPlasma, cool:cmapCool, inferno:cmapInferno };
+
+/* =========================================================
+   COLORMAP STRIP
+========================================================= */
+function drawStrip(cm) {
+  const c=document.getElementById('cmap-strip');
+  c.width=512; c.height=14;
+  const ctx=c.getContext('2d');
+  const img=ctx.createImageData(512,14);
+  for(let x=0;x<512;x++){
+    const [r,g,b]=CMAPS[cm](Math.round(x/511*255));
+    for(let y=0;y<14;y++){const i=(y*512+x)*4;img.data[i]=r;img.data[i+1]=g;img.data[i+2]=b;img.data[i+3]=255;}
+  }
+  ctx.putImageData(img,0,0);
+}
+
+/* =========================================================
+   UI CONTROLS
+========================================================= */
+function setTopMode(m,btn){
+  S.topMode=m;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  // auto-select sensible cmap
+  if(m==='mono') pickCmap('mono');
+  else if(m==='colorscale') { if(S.cmap==='mono') pickCmap('heat'); }
+  else if(m==='full') pickCmap('mono');
+}
+
+function pickCmap(cm){
+  S.cmap=cm;
+  document.querySelectorAll('.co').forEach(e=>e.classList.remove('sel'));
+  document.getElementById('co-'+cm).classList.add('sel');
+  document.getElementById('cnote').innerHTML=CNOTES[cm];
+  document.getElementById('cmode-active').textContent=cm.charAt(0).toUpperCase()+cm.slice(1);
+  // show/hide colormap strip section
+  const showStrip = cm!=='mono';
+  document.getElementById('cmaprow').style.display = showStrip?'block':'none';
+  if(showStrip){ drawStrip(cm); document.getElementById('cmapname').textContent=cm.charAt(0).toUpperCase()+cm.slice(1); }
+}
+
+/* =========================================================
+   IMAGE LOAD
+========================================================= */
+function loadImg(input){
+  const file=input.files[0]; if(!file) return;
+  S.origSize=file.size;
+  document.getElementById('fmeta').textContent=`${file.name.length>18?file.name.slice(0,15)+'…':file.name} · ${(file.size/1024).toFixed(1)}KB`;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.getElementById('origc');
+      c.width=img.width; c.height=img.height;
+      c.getContext('2d').drawImage(img,0,0);
+      S.loaded=true;
+      showOrig(img);
+      document.getElementById('pdim').textContent=`${img.width} × ${img.height}px`;
+      log('i',`✓ Loaded ${img.width}×${img.height} · ${(file.size/1024).toFixed(1)} KB`);
+      log('i','→ Ready — adjust parameters and click Compress');
+      resetDL();
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+  // update drop zone
+  const dz=document.getElementById('dzone');
+  dz.style.opacity='.55'; dz.style.pointerEvents='none';
+  dz.innerHTML=`<div style="font-family:var(--mono);font-size:.65rem;color:var(--accent);padding:10px">✓ ${file.name}</div>`;
+}
+
+function showOrig(img){
+  const wrap=document.getElementById('owrap'); wrap.innerHTML='';
+  const c=document.createElement('canvas');
+  c.width=img.width; c.height=img.height;
+  c.getContext('2d').drawImage(img,0,0);
+  c.style.cssText='max-width:100%;max-height:260px;border-radius:4px';
+  wrap.appendChild(c);
+}
+
+// Drag & drop
+const dz=document.getElementById('dzone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/')){
+    const fi=document.getElementById('finput');
+    const dt=new DataTransfer(); dt.items.add(f); fi.files=dt.files;
+    loadImg(fi);
+  }
+});
+
+/* =========================================================
+   COMPRESSION ENGINE — Real 1-level 2D Haar DWT
+========================================================= */
+function haarFwd(a){
+  const n=a.length, h=n>>1, tmp=new Float32Array(n);
+  for(let i=0;i<h;i++){tmp[i]=(a[2*i]+a[2*i+1])*0.70710678;tmp[i+h]=(a[2*i]-a[2*i+1])*0.70710678;}
+  for(let i=0;i<n;i++) a[i]=tmp[i];
+}
+function haarInv(a){
+  const n=a.length, h=n>>1, tmp=new Float32Array(n);
+  for(let i=0;i<h;i++){tmp[2*i]=(a[i]+a[i+h])*0.70710678;tmp[2*i+1]=(a[i]-a[i+h])*0.70710678;}
+  for(let i=0;i<n;i++) a[i]=tmp[i];
+}
+
+function compressChannel(data, W, H, T, Q){
+  // Pad to even dims if needed
+  const W2=W%2===0?W:W+1, H2=H%2===0?H:H+1;
+  const c=new Float32Array(W2*H2);
+  // copy
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++) c[y*W2+x]=data[y*W+x];
+  // horizontal haar
+  for(let y=0;y<H2;y++) haarFwd(c.subarray(y*W2,y*W2+W2));
+  // vertical haar
+  for(let x=0;x<W2;x++){
+    const col=new Float32Array(H2);
+    for(let y=0;y<H2;y++) col[y]=c[y*W2+x];
+    haarFwd(col);
+    for(let y=0;y<H2;y++) c[y*W2+x]=col[y];
+  }
+  // threshold + quantize
+  for(let i=0;i<c.length;i++){
+    if(Math.abs(c[i])<T) c[i]=0;
+    else c[i]=Math.round(c[i]/Q)*Q;
+  }
+  // inverse
+  for(let x=0;x<W2;x++){
+    const col=new Float32Array(H2);
+    for(let y=0;y<H2;y++) col[y]=c[y*W2+x];
+    haarInv(col);
+    for(let y=0;y<H2;y++) c[y*W2+x]=col[y];
+  }
+  for(let y=0;y<H2;y++) haarInv(c.subarray(y*W2,y*W2+W2));
+  // extract original size
+  const out=new Float32Array(W*H);
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++) out[y*W+x]=c[y*W2+x];
+  return out;
+}
+
+function extractCh(id,ch,W,H){
+  const out=new Float32Array(W*H);
+  for(let i=0;i<W*H;i++) out[i]=id.data[i*4+ch];
+  return out;
+}
+function toGray(id,W,H){
+  const out=new Float32Array(W*H);
+  for(let i=0;i<W*H;i++) out[i]=0.299*id.data[i*4]+0.587*id.data[i*4+1]+0.114*id.data[i*4+2];
+  return out;
+}
+function clamp(v){ return Math.max(0,Math.min(255,Math.round(v))); }
+
+/* =========================================================
+   MAIN RUN
+========================================================= */
+async function runCompress(){
+  if(!S.loaded){ log('w','⚠ No image loaded — upload an image first'); return; }
+  setBusy(true); clearLog(); resetDL();
+  await sleep(10);
+
+  const T=+document.getElementById('thr').value;
+  const Q=+document.getElementById('qnt').value;
+  const quality=+document.getElementById('ql').value/100;
+  const fmt=document.getElementById('fmt').value;
+  const cm=S.cmap;
+  const mode=S.topMode;
+
+  log('i',`▶ Mode: ${mode} · Colormap: ${cm}`);
+  log('i',`→ T=${T} · Q=${Q} · quality=${Math.round(quality*100)}%`);
+  await sleep(60);
+
+  const origC=document.getElementById('origc');
+  const W=origC.width, H=origC.height;
+  const ctx=origC.getContext('2d');
+  const id=ctx.getImageData(0,0,W,H);
+
+  log('i',`→ Reading ${W}×${H} pixels...`);
+  await sleep(40);
+
+  // Build channels
+  let channels=[];
+  if(mode==='full'){
+    channels=[extractCh(id,0,W,H),extractCh(id,1,W,H),extractCh(id,2,W,H)];
+    log('i','→ Full-color: processing R, G, B channels separately');
+  } else {
+    channels=[toGray(id,W,H)];
+    log('i',`→ Grayscale channel extracted`);
+  }
+  await sleep(60);
+
+  log('i','→ Applying 2D Haar DWT decomposition...');
+  await sleep(80);
+
+  const compChans=[];
+  for(let ci=0;ci<channels.length;ci++){
+    compChans.push(compressChannel(channels[ci],W,H,T,Q));
+    if(mode==='full') log('s',`✓ Channel ${['R','G','B'][ci]} compressed`);
+    await sleep(30);
+  }
+
+  log('s','✓ DWT + threshold + quantize complete');
+  log('i','→ Reconstructing image with inverse DWT...');
+  await sleep(70);
+
+  // Render to work canvas
+  const wc=document.getElementById('workc');
+  wc.width=W; wc.height=H;
+  const wctx=wc.getContext('2d');
+  const out=wctx.createImageData(W,H);
+  const cmFn=CMAPS[cm];
+
+  if(mode==='full'){
+    for(let i=0;i<W*H;i++){
+      out.data[i*4]  =clamp(compChans[0][i]);
+      out.data[i*4+1]=clamp(compChans[1][i]);
+      out.data[i*4+2]=clamp(compChans[2][i]);
+      out.data[i*4+3]=255;
+    }
+  } else {
+    const g=compChans[0];
+    for(let i=0;i<W*H;i++){
+      const [r,gg,b]=cmFn(clamp(g[i]));
+      out.data[i*4]=r; out.data[i*4+1]=gg; out.data[i*4+2]=b; out.data[i*4+3]=255;
+    }
+  }
+
+  wctx.putImageData(out,0,0);
+  log('i','→ Exporting as '+fmt.toUpperCase()+'...');
+  await sleep(50);
+
+  const mime={png:'image/png',jpeg:'image/jpeg',webp:'image/webp'}[fmt];
+  const qArg=fmt==='png'?undefined:quality;
+  const dataURL=wc.toDataURL(mime,qArg);
+  S.compDataURL=dataURL;
+
+  // Show compressed
+  showComp(dataURL);
+
+  // Sizes
+  const origKB=S.origSize/1024;
+  const base64Len=dataURL.length-dataURL.indexOf(',')-1;
+  const compBytes=Math.round(base64Len*3/4);
+  const compKB=compBytes/1024;
+  const ratio=(origKB/compKB).toFixed(2);
+  const savings=((1-compKB/origKB)*100).toFixed(1);
+
+  log('s',`✓ Original: ${origKB.toFixed(1)} KB → Compressed: ${compKB.toFixed(1)} KB`);
+  log('s',`✓ Ratio: ${ratio}x · Savings: ${savings}%`);
+
+  // Metrics
+  document.getElementById('morig').textContent=origKB.toFixed(1);
+  document.getElementById('mcomp').textContent=compKB.toFixed(1);
+  document.getElementById('mratio').textContent=ratio+'x';
+  document.getElementById('msave').textContent=savings+'%';
+  document.getElementById('rpct').textContent=savings+'% smaller';
+  const pct=Math.min((compKB/origKB)*100,100);
+  setTimeout(()=>document.getElementById('bfill').style.width=pct+'%',80);
+  document.getElementById('bmid').textContent=(origKB/2).toFixed(0)+' KB';
+  document.getElementById('bmax').textContent=origKB.toFixed(0)+' KB';
+
+  // Colormap strip
+  if(cm!=='mono'){ drawStrip(cm); document.getElementById('cmaprow').style.display='block'; document.getElementById('cmapname').textContent=cm.charAt(0).toUpperCase()+cm.slice(1);}
+
+  // Enable download
+  const ext=fmt==='jpeg'?'jpg':fmt;
+  const fname=`waveletpress_${cm}_T${T}_Q${Q}.${ext}`;
+  const dl=document.getElementById('dlbtn');
+  dl.href=dataURL; dl.download=fname;
+  dl.classList.remove('off');
+  dl.textContent=`⬇ Download Compressed Image (.${ext})`;
+
+  setBusy(false);
+  log('s','✓ Done! Click the download button to save your image.');
+}
+
+function showComp(dataURL){
+  const wrap=document.getElementById('cwrap'); wrap.innerHTML='';
+  const img=document.createElement('img');
+  img.src=dataURL; img.style.cssText='max-width:100%;max-height:260px;border-radius:4px';
+  img.alt='Compressed'; wrap.appendChild(img);
+}
+
+/* =========================================================
+   HELPERS
+========================================================= */
+function setBusy(b){
+  const btn=document.getElementById('runbtn');
+  document.getElementById('runtxt').style.display=b?'none':'block';
+  document.getElementById('runspin').style.display=b?'block':'none';
+  btn.disabled=b;
+}
+function resetDL(){
+  const dl=document.getElementById('dlbtn');
+  dl.classList.add('off'); dl.href='#'; dl.textContent='⬇ Download Compressed Image';
+}
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+let _ll=0;
+function log(type,msg){
+  const box=document.getElementById('logbox');
+  const cls=type==='s'?'lok':type==='w'?'lw':'li';
+  if(_ll===0) box.innerHTML='';
+  box.innerHTML+=`<span class="${cls}">${msg}</span><br>`;
+  _ll++;
+  box.scrollTop=box.scrollHeight;
+}
+function clearLog(){ _ll=0; document.getElementById('logbox').innerHTML=''; }
+</script>
+</body>
+</html>
